@@ -1,98 +1,120 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import React, { useRef, useState } from 'react';
+import { FlatList, KeyboardAvoidingView, Platform, SafeAreaView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+// Mesaj tipi tanımı
+type Message = {
+  id: string;
+  text: string;
+  sender: 'user' | 'bot';
+  isLoading?: boolean; // Bot cevap verirken yükleniyor durumu için
+};
 
-export default function HomeScreen() {
+export default function ChatScreen() {
+  const [inputText, setInputText] = useState('');
+  const flatListRef = useRef<FlatList>(null);
+  
+  // Başlangıç için örnek mesajlar
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      text: 'Merhaba. Ben yapay zeka destekli hukuk asistanınızım. Yüklediğiniz mevzuatlar dahilinde sorularınızı yanıtlayabilirim.',
+      sender: 'bot',
+    },
+  ]);
+
+  const sendMessage = async () => {
+    if (inputText.trim().length === 0) return;
+
+    const userMsgId = Date.now().toString();
+    const userMessage: Message = { id: userMsgId, text: inputText, sender: 'user' };
+    
+    // Kullanıcı mesajını ekle ve inputu temizle
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+    
+    // Botun "yazıyor..." durumunu ekle
+    const loadingMsgId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, { id: loadingMsgId, text: '...', sender: 'bot', isLoading: true }]);
+
+    // --- RAG BACKEND BAĞLANTISI BURADA OLACAK ---
+    // Şimdilik sahte bir bekleme ve cevap simüle edelim.
+    setTimeout(() => {
+        // Yükleniyor mesajını kaldır ve gerçek cevabı ekle
+        setMessages(prev => prev.filter(msg => msg.id !== loadingMsgId));
+        
+        // RAG MANTIĞI: Eğer backend cevap bulamazsa döneceği standart mesaj:
+        const mockNotFoundResponse = "İlgili kanun maddesini şu anki veritabanımda bulamadım. Lütfen ilgili kanun dökümanını (PDF) 'Yükle' sekmesinden sisteme ekleyiniz.";
+        
+        // Örnek cevap:
+        setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            text: mockNotFoundResponse, // Backend'den gelen gerçek cevap buraya gelecek
+            sender: 'bot' 
+        }]);
+    }, 2000);
+  };
+
+  const renderItem = ({ item }: { item: Message }) => {
+    const isUser = item.sender === 'user';
+    return (
+      <View className={`my-2 mx-4 flex-row ${isUser ? 'justify-end' : 'justify-start'}`}>
+        {!isUser && (
+             <View className="h-8 w-8 rounded-full bg-legal-dark items-center justify-center mr-2 self-end">
+                 <Ionicons name="bulb-outline" size={16} color="#FFF" />
+             </View>
+        )}
+        <View
+          className={`rounded-2xl px-4 py-3 max-w-[80%] ${
+            isUser ? 'bg-legal-dark rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none'
+          } ${item.isLoading ? 'opacity-70' : 'opacity-100'}`}>
+          <Text className={`text-[15px] leading-6 ${isUser ? 'text-white' : 'text-legal-primary'}`}>
+            {item.text}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <SafeAreaView className="flex-1 bg-legal-bg">
+      <StatusBar style="dark" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={90} // Tab bar + header yüksekliği kadar
+        className="flex-1"
+      >
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingVertical: 20 }}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
+        
+        {/* Input Alanı */}
+        <View className="flex-row items-center p-4 bg-legal-bg border-t border-slate-200">
+          <View className="flex-1 flex-row items-center bg-white border border-slate-300 rounded-full px-4 py-2 mr-3 shadow-sm">
+            <TextInput
+              className="flex-1 text-legal-primary text-base max-h-24"
+              placeholder="Hukuki sorunuzu yazın..."
+              placeholderTextColor="#94A3B8"
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
             />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
-
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+          </View>
+          <TouchableOpacity
+            onPress={sendMessage}
+            disabled={inputText.trim().length === 0}
+            className={`h-12 w-12 rounded-full items-center justify-center shadow-sm ${inputText.trim().length > 0 ? 'bg-legal-dark' : 'bg-slate-300'}`}>
+            <Ionicons name="arrow-up" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});

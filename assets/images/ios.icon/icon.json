@@ -1,0 +1,36 @@
+{
+  "fill" : {
+    "automatic-gradient" : "srgb:0.24706,0.38824,0.54510,1.00000"
+  },
+  "groups" : [
+    {
+      "blend-mode" : "overlay",
+      "blur-material" : 0.9,
+      "hidden" : false,
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "hidden" : false,
+          "image-name" : "vidy.png",
+          "name" : "vidy"
+        }
+      ],
+      "lighting" : "individual",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.9
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

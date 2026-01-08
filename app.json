@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "hukuky",
+    "name": "Hukuky",
     "slug": "hukuky",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,16 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "icon": "./assets/images/ios.icon",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.emrah.hukuky",
+      "buildNumber": "1",
+      "entitlements": {
+        "aps-environment": "development"
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,8 +27,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "package": "com.emrah.hukuky",
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "pan",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": true
     },
     "web": {
       "output": "static",
