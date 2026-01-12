@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import storage, { getDownloadURL } from "@react-native-firebase/storage";
+import storage from "@react-native-firebase/storage";
 import * as DocumentPicker from 'expo-document-picker';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native';
@@ -41,12 +41,12 @@ export default function UploadScreen() {
         const storageRef = storage().ref(`pdf-files/${name}`);
 
         const snapshot = await storageRef.putFile(uri);
-  
-      
+        
         console.log("Dosya yüklendi!", snapshot);
   
         // D. Yüklenen dosyanın URL'ini al
-        const downloadURL = await getDownloadURL(storageRef);
+        const downloadURL = await storageRef.getDownloadURL();
+
         setLastUrl(downloadURL);
   
         Alert.alert("Başarılı", "PDF başarıyla yüklendi! ID: " + name);

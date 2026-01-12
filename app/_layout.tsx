@@ -3,8 +3,6 @@ import 'react-native-reanimated';
 import '../global.css';
 
 import { useColorScheme } from '@/lib/useColorScheme';
-import { NAV_THEME } from '@/theme';
-import { ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
@@ -30,9 +28,8 @@ export default function RootLayout() {
         style={isDarkColorScheme ? 'light' : 'dark'}
       />
 
-      <NavThemeProvider value={NAV_THEME[colorScheme]}>
-        <Slot />
-      </NavThemeProvider>
+
+    <Slot />     
     </>
   )
 
