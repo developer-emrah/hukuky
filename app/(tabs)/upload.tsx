@@ -1,93 +1,128 @@
 import { Ionicons } from '@expo/vector-icons';
+import storage, { getDownloadURL } from "@react-native-firebase/storage";
 import * as DocumentPicker from 'expo-document-picker';
-import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function UploadScreen() {
-  const [uploading, setUploading] = useState(false);
-  const [lastUploadedFile, setLastUploadedFile] = useState<string | null>(null);
+    const [file, setFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [lastUrl, setLastUrl] = useState<string | null>(null);
 
+
+  // 1. Dosya Seçme Fonksiyonu
   const pickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf', // Sadece PDF
+        type: "application/pdf",
         copyToCacheDirectory: true,
       });
 
-      if (result.assets && result.assets.length > 0) {
-        const file = result.assets[0];
-        uploadFileToServer(file);
-      }
+      if (result.canceled) return;
+
+      // Seçilen dosyayı state'e at
+      setFile(result.assets[0]);
+      setLastUrl(null); // Yeni dosya seçince eski linki temizle
     } catch (err) {
-      console.error("Dosya seçme hatası:", err);
+      console.log("Dosya seçilemedi:", err);
     }
   };
 
-  const uploadFileToServer = async (file: DocumentPicker.DocumentPickerAsset) => {
-    setUploading(true);
-    // --- RAG BACKEND UPLOAD İŞLEMİ BURADA OLACAK ---
-    console.log("Dosya Backend'e gönderiliyor:", file.uri, file.name);
-    
-    // Backend'e FormData ile gönderim simülasyonu:
-    // const formData = new FormData();
-    // formData.append('document', { uri: file.uri, name: file.name, type: file.mimeType } as any);
-    // await fetch('YOUR_BACKEND_URL/upload', { method: 'POST', body: formData });
 
-    setTimeout(() => {
-        // İşlem tamamlandı simülasyonu
+   // 2. Firebase Storage'a Yükleme Fonksiyonu
+    const uploadToFirebase = async () => {
+      if (!file) return;
+      setUploading(true);
+  
+      try {
+        const { uri, name } = file;
+
+        const storageRef = storage().ref(`pdf-files/${name}`);
+
+        const snapshot = await storageRef.putFile(uri);
+  
+      
+        console.log("Dosya yüklendi!", snapshot);
+  
+        // D. Yüklenen dosyanın URL'ini al
+        const downloadURL = await getDownloadURL(storageRef);
+        setLastUrl(downloadURL);
+  
+        Alert.alert("Başarılı", "PDF başarıyla yüklendi! ID: " + name);
+  
+        // E. Formu temizle
+        setFile(null);
+      } catch (error: any) {
+        console.error("Yükleme Hatası:", error);
+        Alert.alert("Hata", "Yükleme sırasında bir sorun oluştu.\n" + error.message);
+      } finally {
         setUploading(false);
-        setLastUploadedFile(file.name);
-        alert("Döküman başarıyla işlendi ve bilgi tabanına eklendi.");
-    }, 3000);
-  };
+      }
+    };
 
-  return (
-    <SafeAreaView className="flex-1 bg-legal-bg">
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
-        
-        <View className="items-center mb-8">
-            <Text className="text-2xl font-bold text-legal-dark text-center">Bilgi Tabanını Genişlet</Text>
-            <Text className="text-legal-secondary text-center mt-3 leading-6">
-                Asistanın daha doğru cevap verebilmesi için ilgili kanun maddelerini içeren PDF dökümanlarını buraya yükleyin.
-            </Text>
+return (
+    <SafeAreaView className="flex-1 bg-slate-900 p-6">
+      {/* Başlık Alanı */}
+      <View className="items-center mt-10 mb-12">
+        <View className="w-20 h-20 bg-slate-800 rounded-full items-center justify-center mb-4 border border-slate-700">
+          <Ionicons name="cloud-upload-outline" size={32} color="#3b82f6" />
         </View>
-        
+        <Text className="text-2xl font-bold text-white mb-2">Belge Yükle</Text>
+        <Text className="text-slate-400 text-center px-4">
+          Analiz edilecek PDF dokümanını seçin ve buluta yükleyin.
+        </Text>
+      </View>
+
+      {/* Dosya Seçme Alanı (Dashed Border) */}
+      <TouchableOpacity
+        onPress={pickDocument}
+        className="border-2 border-dashed border-slate-600 rounded-2xl h-48 items-center justify-center bg-slate-800/50 mb-8 active:bg-slate-800"
+      >
+        {file ? (
+          <View className="items-center">
+            <Ionicons name="document-text-outline" size={48} color="#4ade80" />
+            <Text className="text-white mt-4 font-semibold text-lg px-4 text-center" numberOfLines={1}>
+              {file.name}
+            </Text>
+            <Text className="text-slate-400 text-sm mt-1">
+              {file.size ? (file.size / 1024 / 1024).toFixed(2) : "0"} MB
+            </Text>
+          </View>
+        ) : (
+          <View className="items-center">
+            <Ionicons name="add-circle-outline" size={48} color="#94a3b8" />
+            <Text className="text-slate-300 font-medium mt-3">PDF Seçmek İçin Dokun</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      {/* Yükle Butonu */}
+      {file && (
         <TouchableOpacity
-          onPress={pickDocument}
+          onPress={uploadToFirebase}
           disabled={uploading}
-          className="bg-white border-2 border-dashed border-slate-300 rounded-3xl p-8 items-center justify-center shadow-sm active:bg-slate-50"
+          className={`w-full py-4 rounded-xl flex-row items-center justify-center gap-3 shadow-lg ${
+            uploading ? "bg-slate-700" : "bg-blue-500"
+          }`}
         >
           {uploading ? (
-            <>
-                 <ActivityIndicator size="large" color="#1E293B" />
-                 <Text className="text-legal-primary font-semibold mt-4">Döküman İşleniyor...</Text>
-                 <Text className="text-legal-secondary text-sm mt-2">Vektörleştirme biraz zaman alabilir.</Text>
-            </>
+            <ActivityIndicator color="white" />
           ) : (
             <>
-                <View className="bg-slate-100 p-6 rounded-full mb-4">
-                 <Ionicons name="document-text-outline" size={40} color="#1E293B" />
-                </View>
-                 <Text className="text-lg font-semibold text-legal-dark">Bir PDF Dökümanı Seç</Text>
-                 <Text className="text-legal-secondary text-sm mt-2 text-center">
-                    Maksimum dosya boyutu: 10MB
-                 </Text>
+              <Ionicons name='checkmark-circle' size={24} color={'white'}/>
+              <Text className="text-white font-bold text-lg">Sisteme Yükle</Text>
             </>
           )}
         </TouchableOpacity>
+      )}
 
-        {lastUploadedFile && !uploading && (
-             <View className="mt-8 bg-green-50 border border-green-200 p-4 rounded-xl flex-row items-center">
-                 <Ionicons name="checkmark-circle" size={24} color="#059669" />
-                 <View className="ml-3">
-                     <Text className="text-green-800 font-semibold">Son Yükleme Başarılı</Text>
-                     <Text className="text-green-700 text-sm" numberOfLines={1}>{lastUploadedFile}</Text>
-                 </View>
-             </View>
-        )}
-
-      </ScrollView>
+      {/* Başarılı Yükleme Bilgisi */}
+      {lastUrl && !file && (
+        <View className="mt-6 p-4 bg-green-900/20 border border-green-800 rounded-xl">
+          <Text className="text-green-400 text-center">✅ Son dosya başarıyla yüklendi.</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

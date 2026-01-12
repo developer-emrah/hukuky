@@ -45,3 +45,7 @@ app-example
 # builds
 build*
 
+# Firebase configs
+**/google-services.json
+**/GoogleService-Info.plist
+
