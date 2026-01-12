@@ -112,7 +112,7 @@ export default function ChatScreen() {
         <View className="flex-row items-center gap-2">
           <TextInput
             className="flex-1 bg-slate-800 text-white p-4 rounded-xl text-base"
-            placeholder="Sorunuzu yazın..."
+            placeholder="Hukuky'ye sorun..."
             placeholderTextColor="#94a3b8"
             value={inputText}
             onChangeText={setInputText}

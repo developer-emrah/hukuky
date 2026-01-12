@@ -19,13 +19,13 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const { colorScheme, isDarkColorScheme } = useColorScheme();
-
+  console.log('Color Scheme:', isDarkColorScheme);
 
   return (
     <>
       <StatusBar
         key={`root-status-bar-${isDarkColorScheme ? 'light' : 'dark'}`}
-        style={isDarkColorScheme ? 'light' : 'dark'}
+        style={"light"}
       />
 
 
