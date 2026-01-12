@@ -2,7 +2,7 @@
   "expo": {
     "name": "Hukuky",
     "slug": "hukuky",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "hukuky",
@@ -29,7 +29,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "package": "com.emrah.hukuky",
-      "versionCode": 1,
+      "versionCode": 2,
       "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "pan",
       "edgeToEdgeEnabled": true,

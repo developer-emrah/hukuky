@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import functions from '@react-native-firebase/functions';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,8 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Mesaj tipi tanımı
 type Message = {
   id: string;
-  text: string;
-  sender: 'user' | 'assistant' | 'system';
+  answer: string;
+  role: 'user' | 'assistant' | 'system';
 };
 
 export default function ChatScreen() {
@@ -18,55 +19,31 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   
 
-// burayı servis olarak ekleyeceğim firebase functions'a
-
-//   async function query(data: any) {
-// 	const response = await fetch(
-// 		"https://router.huggingface.co/v1/chat/completions",
-// 		{
-// 			headers: {
-// 				Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-// 				"Content-Type": "application/json",
-// 			},
-// 			method: "POST",
-// 			body: JSON.stringify(data),
-// 		}
-// 	);
-// 	const result = await response.json();
-// 	return result;
-// }
-
 
   const sendMessage = async () => {
     if (inputText.trim().length === 0) return;
+
 
     // firebase functions ile backend'e istek atılacak s
     // sadece bir string gönderilecek. (question)
     // cevap olarak (answer) dönecek.
     
     // Kullanıcı mesajını ekle ve inputu temizle
-    const userMsg: Message = { id: Date.now().toString(), text: inputText, sender: "user" };
+    const userMsg: Message = { id: Date.now().toString(), answer: inputText, role: "user" };
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
     setLoading(true);
-  // Botun "yazıyor..." durumunu ekle
-
-
-
-    // firebase functions ile backend'e istek atılacak
 
     try {
-      // --- BURAYA İLERİDE RAG API BAĞLANTISI GELECEK ---
-      // Şimdilik yapay bir bekleme ve cevap ekliyoruz
-      setTimeout(() => {
-        const aiMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          text: `"${userMsg.text}" sorusuyla ilgili Anayasa veritabanında araştırma yapıyorum...`,
-          sender: "assistant",
-        };
-        setMessages((prev) => [...prev, aiMsg]);
-        setLoading(false);
-      }, 1500);
+// Fonksiyonunuzu bölgesiyle birlikte tanımlayın (Örn: europe-west1)
+
+    const response = await functions()
+      .httpsCallable('queryLegalAgent')({
+        question: userMsg.answer, // Backend'de request.data.question olarak yakalayacaksınız
+      });    
+      console.log('Response data:', response.data);
+      setMessages((prev) => [...prev, response.data as Message]);
+      setLoading(false);
     } catch (error) {
       console.error(error);
       setLoading(false);
@@ -74,18 +51,18 @@ export default function ChatScreen() {
   };
 
  const renderItem = ({ item }: { item: Message }) => (
-    <View className={`flex-row mb-4 ${item.sender === "user" ? "justify-end" : "justify-start"}`}>
-      {item.sender === "assistant" && (
+    <View className={`flex-row mb-4 ${item.role === "user" ? "justify-end" : "justify-start"}`}>
+      {item.role === "assistant" && (
         <View className="w-8 h-8 rounded-full bg-blue-500 items-center justify-center mr-2">
-          <Ionicons name="sparkles" size={20} color="red" />
+          <Ionicons name="sparkles" size={20} color="white" />
         </View>
       )}
 
-      <View className={`p-4 rounded-2xl max-w-[80%] ${item.sender === "user" ? "bg-blue-600" : "bg-slate-800"}`}>
-        <Text className="text-white text-base leading-6">{item.text}</Text>
+      <View className={`p-4 rounded-2xl max-w-[80%] ${item.role === "user" ? "bg-blue-600" : "bg-slate-800"}`}>
+        <Text className="text-white text-base leading-6">{item.answer}</Text>
       </View>
 
-      {item.sender === "user" && (
+      {item.role === "user" && (
         <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center ml-2">
           <Ionicons name="person" size={20} color="white" />
         </View>
@@ -102,6 +79,10 @@ export default function ChatScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
+          // İçerik boyutu her değiştiğinde (yeni mesaj geldiğinde) en alta kaydır
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          // Klavye açıldığında veya liste ilk yüklendiğinde de alta odaklanması için
+          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
       </View>
 
